@@ -3,11 +3,11 @@
 #include <string.h>
 
 
-void decrypt(char*, char*);
-void encrypt(char*, char*);
-char ffAdd(char, char);
-char ffMultiply(char, char);
-char xtime(char);
+void decrypt(unsigned char*, unsigned char*);
+void encrypt(unsigned char*, unsigned char*);
+unsigned char ffAdd(unsigned char, unsigned char);
+unsigned char ffMultiply(unsigned char, unsigned char);
+unsigned char xtime(unsigned char);
 void testArithmetic();
 
 int main(int argc, char** argv) {
@@ -24,11 +24,11 @@ int main(int argc, char** argv) {
 }
 
 /** finite field arithmetic functions **/
-char ffAdd(char x, char y) {
+unsigned char ffAdd(unsigned char x, unsigned char y) {
     return x ^ y;
 }
 
-char xtime(char x) {
+unsigned char xtime(unsigned char x) {
 
     if ((x & 0x80) == 0x80) {
         return (x << 1) ^ 0x1b;
@@ -37,7 +37,7 @@ char xtime(char x) {
 
 }
 
-char ffMultiply(char x, char y) {
+unsigned char ffMultiply(unsigned char x, unsigned char y) {
     
     char total = 0;
     char possibleX[8];
@@ -61,22 +61,22 @@ char ffMultiply(char x, char y) {
 }
 
 void testArithmetic() {
-    char add = ffAdd(0x57, 0x83);
+    unsigned char add = ffAdd(0x57, 0x83);
     printf("ffAdd = %x\n", add);
 
-    char x1 = xtime(0x57);
+    unsigned char x1 = xtime(0x57);
     printf("x1 = %x\n", x1);
 
-    char x2 = xtime(0xae);
+    unsigned char x2 = xtime(0xae);
     printf("x2 = %x\n", x2);
 
-    char x3 = xtime(0x47);
+    unsigned char x3 = xtime(0x47);
     printf("x3 = %x\n", x3);
 
-    char x4 = xtime(0x8e);
+    unsigned char x4 = xtime(0x8e);
     printf("x4 = %x\n", x4);
 
-    char multiply = ffMultiply(0x57, 0x13);
+    unsigned char multiply = ffMultiply(0x57, 0x13);
     printf("ffMult = %x\n", multiply);
-
+    
 }
