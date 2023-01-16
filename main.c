@@ -12,12 +12,15 @@ unsigned char xtime(unsigned char);
 u_int32_t rotWord(u_int32_t);
 u_int32_t subWord(u_int32_t);
 u_int32_t* keyExpansion(u_int8_t*, u_int32_t*, unsigned int);
-void subBytes(unsigned int**);
-void shiftRows(unsigned int**);
+void subBytes(u_int8_t(*state)[4]);
+void shiftRows(u_int8_t(*state)[4]);
+void mixColumns(u_int8_t(*state)[4]);
+void addRoundKey(u_int8_t(*state)[4], u_int32_t*, unsigned int);
 void cipher(u_int8_t*, u_int8_t*,u_int32_t*);
 void testArithmetic();
 void testSubAndRot();
 void testKeyExpansion();
+void testCipherFunctions();
 
 int keyLength = 4;
 int blockSize = 4;
@@ -47,7 +50,8 @@ int main(int argc, char** argv) {
 
     //testArithmetic();
     //testSubAndRot();
-    testKeyExpansion();
+    //testKeyExpansion();
+    testCipherFunctions();
     /*if (strcmp(argv[1], "-d")) {
         decrypt(argv[2], argv[3]);
     }
@@ -156,7 +160,7 @@ u_int32_t* keyExpansion(u_int8_t key[4*keyLength], u_int32_t word[blockSize*(num
     
 }
 
-void subBytes(unsigned int** state) {
+void subBytes(u_int8_t(*state)[4]) {
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
             subWord(state[i][j]);
@@ -165,35 +169,78 @@ void subBytes(unsigned int** state) {
 
 }
 
-void shiftRows(unsigned int** state) {
+void shiftRows(u_int8_t(*state)[4]) {
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; )
+        if (i == 0) {
+            continue;
+        }
+        else if (i == 1) {
+            rotWord(state[i][j]);
+        }
+        else if (i == 2) {
+            rotWord(state[i][j]);
+            rotWord(state[i][j]);
+        }
+        else if (i == 3) {
+            rotWord(state[i][j]);
+            rotWord(state[i][j]);
+            rotWord(state[i][j]);
+        }
+    }
+}
+
+void mixColumns(u_int8_t(*state)[4]) {
+    unsigned char fixedPolynomial[4][4] = {
+        {0x02, 0x03, 0x01, 0x01},
+        {0x01, 0x02, 0x03, 0x01},
+        {0x01, 0x01, 0x02, 0x03},
+        {0x03, 0x01, 0x01, 0x02}
+    };
+
+    unsigned int result[4][4];
+
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            result[i][j] = 0;
+
+            for (int k = 0; k < 4; ++k) {
+                result[i][j] = ffAdd(result[i][j], ffMultiply(fixedPolynomial[i][k], state[k][j]));
+            }
+        }
+        
+    }
 
 }
 
-void mixColumns(unsigned int** state) {
-    unsigned char fixedPolynomial
-    //for (int i = 0; i < )
+void addRoundKey(u_int8_t(*state)[4], u_int32_t w[blockSize*(numRounds+1)], unsigned int numRounds) {
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            ffAdd(state[i][j], w[i]);
+        }
+    }
 }
 
 void cipher(u_int8_t in[blockSize], u_int8_t out[blockSize], u_int32_t w[blockSize*(numRounds+1)]) {
-    unsigned int state[4][4];
+    u_int8_t state[4][4];
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
             state[j][i] = in[i*4 + j];
         }
     }
 
-    addRoundKey(state, w);
+    addRoundKey(state, w, 4);
 
     for (int round = 1; round < numRounds; ++round) {
         subBytes(state);
         shiftRows(state);
         mixColumns(state);
-        addRoundKey(state, w + round * blockSize);
+        addRoundKey(state, w + round * blockSize, 4);
     }
 
     subBytes(state);
     shiftRows(state);
-    addRoundKey(state, w + numRounds * blockSize);
+    addRoundKey(state, w + numRounds * blockSize, 4);
 
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
@@ -207,7 +254,7 @@ void testKeyExpansion() {
     u_int32_t w[44];
 
     for (int i = 0; i < 10; ++i) {
-        int nextKey = keyExpansion(key, w, keyLength);
+        u_int32_t* nextKey = keyExpansion(key, w, keyLength);
     }
 
     for (int i = 0; i < 44; ++i) {
@@ -256,4 +303,73 @@ void testArithmetic() {
     unsigned char multiply = ffMultiply(0x57, 0x13);
     printf("ffMult = %x\n", multiply);
     
+}
+
+void testCipherFunctions() {
+    u_int8_t state[4][4] =  { {0x19,0xa0,0x9a,0xe9},
+                         {0x3d,0xf4,0xc6,0xf8},
+                         {0xe3,0xe2,0x8d,0x48},
+                         {0xbe,0x2b,0x2a,0x08}};
+
+    subBytes(state);
+    printf("after subBytes:\n");
+    for (int i = 0; i < 4; ++i) {
+         printf("sub[%d] = ", i);
+        for (int j = 0; j < 4; ++j) {
+            printf("%x, ", state[i][j]);
+        }
+        printf("\n");
+    }
+
+    printf("\n");
+
+    u_int8_t state1[4][4] =  { {0x19,0xa0,0x9a,0xe9},
+                         {0x3d,0xf4,0xc6,0xf8},
+                         {0xe3,0xe2,0x8d,0x48},
+                         {0xbe,0x2b,0x2a,0x08}};
+
+
+    shiftRows(state);
+    printf("after shiftRows:\n");
+    for (int i = 0; i < 4; ++i) {
+         printf("shift[%d] = ", i);
+        for (int j = 0; j < 4; ++j) {
+            printf("%x, ", state[i][j]);
+        }
+        printf("\n");
+    }
+
+    printf("\n");
+
+    u_int8_t state2[4][4] =  { {0x19,0xa0,0x9a,0xe9},
+                         {0x3d,0xf4,0xc6,0xf8},
+                         {0xe3,0xe2,0x8d,0x48},
+                         {0xbe,0x2b,0x2a,0x08}};
+
+
+    mixColumns(state);
+    printf("after mixColumns: \n");
+   for (int i = 0; i < 4; ++i) {
+         printf("mix[%d] = ", i);
+        for (int j = 0; j < 4; ++j) {
+            printf("%x, ", state[i][j]);
+        }
+        printf("\n");
+    }
+
+    printf("\n");
+
+    u_int8_t state3[4][4] =  { {0x19,0xa0,0x9a,0xe9},
+                         {0x3d,0xf4,0xc6,0xf8},
+                         {0xe3,0xe2,0x8d,0x48},
+                         {0xbe,0x2b,0x2a,0x08}};
+
+
+    // addRoundKey(state);
+    // printf("after subBytes:\n");
+    // for (int i = 0; i < 4; ++i) {
+    //     
+    // }
+
+
 }
