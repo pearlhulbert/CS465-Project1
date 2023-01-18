@@ -100,7 +100,7 @@ u_int8_t ffMultiply(u_int8_t x, u_int8_t y) {
 }
 
 u_int32_t rotWord(u_int32_t x) {
-    printf("x in rotWord: %d\n", x);
+    //printf("x in rotWord: %d\n", x);
     return (x << 8) | (x >> 24);
 } 
 
@@ -174,32 +174,39 @@ void subBytes(u_int8_t(*state)[4]) {
 
 void shiftRows(u_int8_t(*state)[4]) {
 
-    printf("in shiftRows\n");
+    //printf("in shiftRows\n");
+    u_int8_t temp;
+
 
     for (int i = 0; i < 4; ++i) {
-        for (int j = 0; j < 4; ) {
+        for (int j = 0; j < 4; ++j) {
             if (i == 0) {
                 continue;
             }
             else if (i == 1) {
-                state[i][j] = rotWord(state[i][j]);
-                printf("first row: %d\n", state[i][j]);
+                state[i][j] = state[]
+                //printf("first row: %d\n", state[i][j]);
             }
             else if (i == 2) {
-                printf("second row: ");
-                state[i][j] = rotWord(state[i][j]);
-                printf("%d ", state[i][j]);
-                state[i][j] = rotWord(state[i][j]);
-                printf("%d\n", state[i][j]);
+                //printf("second row: ");
+                temp = rotWord(state[i][j]);
+                state[i][j] = temp;
+                //printf("%d ", state[i][j]);
+                temp = rotWord(state[i][j]);
+                state[i][j] = temp;
+                //printf("%d\n", state[i][j]);
             }
             else if (i == 3) {
-                printf("third row: ");
-                state[i][j] = rotWord(state[i][j]);
-                printf("%d ", state[i][j]);
-                state[i][j] = rotWord(state[i][j]);
-                printf("%d ", state[i][j]);
-                state[i][j] = rotWord(state[i][j]);
-                printf("%d\n", state[i][j]);
+                //printf("third row: ");
+                temp = rotWord(state[i][j]);
+                state[i][j] = temp;
+                //printf("%d ", state[i][j]);
+                temp = rotWord(state[i][j]);
+                state[i][j] = temp;
+                //printf("%d ", state[i][j]);
+                temp = rotWord(state[i][j]);
+                state[i][j] = temp;
+                //printf("%d\n", state[i][j]);
             }
         }
        
@@ -351,7 +358,7 @@ void testCipherFunctions() {
     for (int i = 0; i < 4; ++i) {
          printf("shift[%d] = ", i);
         for (int j = 0; j < 4; ++j) {
-            printf("%x, ", state[i][j]);
+            printf("%x, ", state1[i][j]);
         }
         printf("\n");
     }
@@ -369,7 +376,7 @@ void testCipherFunctions() {
    for (int i = 0; i < 4; ++i) {
          printf("mix[%d] = ", i);
         for (int j = 0; j < 4; ++j) {
-            printf("%x, ", state[i][j]);
+            printf("%x, ", state2[i][j]);
         }
         printf("\n");
     }
