@@ -176,40 +176,18 @@ void shiftRows(u_int8_t(*state)[4]) {
 
     //printf("in shiftRows\n");
     u_int8_t temp;
-
+    u_int8_t newState[4][4];
 
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
-            if (i == 0) {
-                continue;
-            }
-            else if (i == 1) {
-                state[i][j] = state[]
-                //printf("first row: %d\n", state[i][j]);
-            }
-            else if (i == 2) {
-                //printf("second row: ");
-                temp = rotWord(state[i][j]);
-                state[i][j] = temp;
-                //printf("%d ", state[i][j]);
-                temp = rotWord(state[i][j]);
-                state[i][j] = temp;
-                //printf("%d\n", state[i][j]);
-            }
-            else if (i == 3) {
-                //printf("third row: ");
-                temp = rotWord(state[i][j]);
-                state[i][j] = temp;
-                //printf("%d ", state[i][j]);
-                temp = rotWord(state[i][j]);
-                state[i][j] = temp;
-                //printf("%d ", state[i][j]);
-                temp = rotWord(state[i][j]);
-                state[i][j] = temp;
-                //printf("%d\n", state[i][j]);
-            }
+            newState[i][j] = state[i][(j+i) % 4];
         }
-       
+    }
+
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            state[i][j] = newState[i][j];
+        }
     }
 }
 
@@ -353,12 +331,12 @@ void testCipherFunctions() {
                          {0xbe,0x2b,0x2a,0x08}};
 
 
-    shiftRows(state1);
+    shiftRows(state);
     printf("after shiftRows:\n");
     for (int i = 0; i < 4; ++i) {
          printf("shift[%d] = ", i);
         for (int j = 0; j < 4; ++j) {
-            printf("%x, ", state1[i][j]);
+            printf("%x, ", state[i][j]);
         }
         printf("\n");
     }
@@ -371,12 +349,12 @@ void testCipherFunctions() {
                          {0xbe,0x2b,0x2a,0x08}};
 
 
-    mixColumns(state2);
+    mixColumns(state);
     printf("after mixColumns: \n");
    for (int i = 0; i < 4; ++i) {
          printf("mix[%d] = ", i);
         for (int j = 0; j < 4; ++j) {
-            printf("%x, ", state2[i][j]);
+            printf("%x, ", state[i][j]);
         }
         printf("\n");
     }
