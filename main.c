@@ -207,10 +207,15 @@ void shiftRows(u_int8_t(*state)[4]) {
 
             for (int k = 0; k < 4; ++k) {
                 result[i][j] = ffAdd(result[i][j], ffMultiply(fixedPolynomial[i][k], state[k][j]));
-                state[i][j] = result[i][j];
             }
         }
         
+    }
+
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            state[i][j] = result[i][j];
+        }
     }
 
 }
