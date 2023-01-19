@@ -139,6 +139,8 @@ u_int32_t* keyExpansion(u_int8_t key[4*keyLength], u_int32_t word[blockSize*(num
            0x83000000, 0x1D000000, 0x3A000000, 0x74000000, 
            0xE8000000, 0xCB000000, 0x8D000000 };
 
+    u_int32_t keySchedule[numRounds];
+
     unsigned int i = 0;
 
     while (i < keyLength) {
@@ -221,9 +223,18 @@ void shiftRows(u_int8_t(*state)[4]) {
 }
 
 void addRoundKey(u_int8_t(*state)[4], u_int32_t w[blockSize*(numRounds+1)], unsigned int numRounds) {
+
+    u_int8_t newState[4][4];
+
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
-            ffAdd(state[i][j], w[i]);
+            newState[i][j] = ffAdd(state[i][j], w[i]);
+        }
+    }
+
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            state[i][j] = newState[i][j];
         }
     }
 }
@@ -371,12 +382,29 @@ void testCipherFunctions() {
                          {0xe3,0xe2,0x8d,0x48},
                          {0xbe,0x2b,0x2a,0x08} };
 
+    uint32_t w[44] = { 0x2b7e1516, 0x28aed2a6, 0xabf71588, 0x09cf4f3c,
+                              0xa0fafe17, 0x88542cb1, 0x23a33939, 0x2a6c7605,
+                              0xf2c295f2, 0x7a96b943, 0x5935807a, 0x7359f67f,
+                              0x3d80477d, 0x4716fe3e, 0x1e237e44, 0x6d7a883b,
+                              0xef44a541, 0xa8525b7f, 0xb671253b, 0xdb0bad00,
+                              0xd4d1c6f8, 0x7c839d87, 0xcaf2b8bc, 0x11f915bc,
+                              0x6d88a37a, 0x110b3efd, 0xdbf98641, 0xca0093fd,
+                              0x4e54f70e, 0x5f5fc9f3, 0x84a64fb2, 0x4ea6dc4f,
+                              0xead27321, 0xb58dbad2, 0x312bf560, 0x7f8d292f,
+                              0xac7766f3, 0x19fadc21, 0x28d12941, 0x575c006e,
+                              0xd014f9a8, 0xc9ee2589, 0xe13f0cc8, 0xb6630ca6 };
 
-    // addRoundKey(state);
-    // printf("after subBytes:\n");
-    // for (int i = 0; i < 4; ++i) {
-    //     
-    // }
+
+
+    addRoundKey(state, w, 4);
+    printf("after addRoundKey:\n");
+    for (int i = 0; i < 4; ++i) {
+         printf("add[%d] = ", i);
+         for (int j = 0; j < 4; ++j) {
+             printf("%x, ", state[i][j]);
+         }
+         printf("\n");
+    }
 
 
 }
