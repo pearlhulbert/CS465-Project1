@@ -11,11 +11,11 @@ u_int8_t ffMultiply(u_int8_t, u_int8_t);
 u_int8_t  xtime(u_int8_t);
 u_int32_t rotWord(u_int32_t);
 u_int32_t subWord(u_int32_t);
-u_int32_t* keyExpansion(u_int8_t*, u_int32_t*, unsigned int);
+u_int32_t* keyExpansion(u_int8_t*, u_int32_t*, int);
 void subBytes(u_int8_t(*state)[4]);
 void shiftRows(u_int8_t(*state)[4]);
 void mixColumns(u_int8_t(*state)[4]);
-void addRoundKey(u_int8_t(*state)[4], u_int32_t*, unsigned int);
+void addRoundKey(u_int8_t(*state)[4], u_int32_t*, int);
 void cipher(u_int8_t*, u_int8_t*, u_int32_t*);
 void testArithmetic();
 void testSubAndRot();
@@ -44,6 +44,8 @@ int numRounds = 10;
     { 0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf } ,
     { 0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16 }
     };
+
+
 
 
 int main(int argc, char** argv) {
@@ -121,7 +123,7 @@ u_int32_t subWord(u_int32_t x) {
     return x;
 }
 
-u_int32_t* keyExpansion(u_int8_t key[4*keyLength], u_int32_t word[blockSize*(numRounds+1)], unsigned int keyLength) {
+u_int32_t* keyExpansion(u_int8_t key[4*keyLength], u_int32_t word[blockSize*(numRounds+1)], int keyLength) {
     
     u_int8_t temp[4];
     u_int32_t rcon[] = { 0x00000000, 
@@ -139,7 +141,6 @@ u_int32_t* keyExpansion(u_int8_t key[4*keyLength], u_int32_t word[blockSize*(num
            0x83000000, 0x1D000000, 0x3A000000, 0x74000000, 
            0xE8000000, 0xCB000000, 0x8D000000 };
 
-    u_int32_t keySchedule[numRounds];
 
     unsigned int i = 0;
 
@@ -149,6 +150,7 @@ u_int32_t* keyExpansion(u_int8_t key[4*keyLength], u_int32_t word[blockSize*(num
     }
 
     i = keyLength;
+    int j = 0;
 
     while (i < blockSize * (numRounds + 1)) {
         u_int32_t temp = word[i-1];
@@ -159,6 +161,7 @@ u_int32_t* keyExpansion(u_int8_t key[4*keyLength], u_int32_t word[blockSize*(num
         }
         word[i] = word[i-keyLength] ^ temp;
         i++;
+        j++;
     }
 
     return word;
@@ -222,13 +225,21 @@ void shiftRows(u_int8_t(*state)[4]) {
 
 }
 
-void addRoundKey(u_int8_t(*state)[4], u_int32_t w[blockSize*(numRounds+1)], unsigned int numRounds) {
+void addRoundKey(u_int8_t(*state)[4], u_int32_t w[blockSize*(numRounds+1)], int currRound) {
 
     u_int8_t newState[4][4];
 
+    u_int32_t currNum = w[currRound];
+
     for (int i = 0; i < 4; ++i) {
+        if (i != 0) {
+            currNum = w[currRound + i];
+        }
         for (int j = 0; j < 4; ++j) {
-            newState[i][j] = ffAdd(state[i][j], w[i]);
+            u_int8_t x = state[j][i];
+            u_int8_t y = (currNum >> (8*(3 - j))) & 0xff;
+            newState[j][i] = ffAdd(x, y);
+            u_int8_t result = newState[j][i];
         }
     }
 
@@ -246,19 +257,20 @@ void cipher(u_int8_t in[blockSize], u_int8_t out[blockSize], u_int32_t w[blockSi
             state[j][i] = in[i*4 + j];
         }
     }
-
-    addRoundKey(state, w, 4);
+    int roundIndex = 0;
+    addRoundKey(state, w, roundIndex);
 
     for (int round = 1; round < numRounds; ++round) {
+        roundIndex += 4;
         subBytes(state);
         shiftRows(state);
         mixColumns(state);
-        addRoundKey(state, w + round * blockSize, 4);
+        addRoundKey(state, w + round * blockSize, roundIndex);
     }
 
     subBytes(state);
     shiftRows(state);
-    addRoundKey(state, w + numRounds * blockSize, 4);
+    addRoundKey(state, w + numRounds * blockSize, roundIndex + 4);
 
     for (int i = 0; i < 4; ++i) {
         for (int j = 0; j < 4; ++j) {
@@ -271,9 +283,9 @@ void testKeyExpansion() {
     u_int8_t key[16] = { 0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c };
     u_int32_t w[44];
 
-    for (int i = 0; i < 10; ++i) {
-        u_int32_t* nextKey = keyExpansion(key, w, keyLength);
-    }
+//    for (int i = 0; i < 10; ++i) {
+//        u_int32_t* nextKey = keyExpansion(key, w, keyLength);
+//    }
 
     for (int i = 0; i < 44; ++i) {
         printf("w[%d] = %x\n", i, w[i]);
@@ -323,7 +335,7 @@ void testArithmetic() {
     
 }
 
-void testCipherFunctions() {
+void testCipherFunctions(u_int32_t keySchedule[blockSize*(numRounds + 1)]) {
     u_int8_t state[4][4] =  { {0x19,0xa0,0x9a,0xe9},
                          {0x3d,0xf4,0xc6,0xf8},
                          {0xe3,0xe2,0x8d,0x48},
@@ -394,6 +406,10 @@ void testCipherFunctions() {
                               0xac7766f3, 0x19fadc21, 0x28d12941, 0x575c006e,
                               0xd014f9a8, 0xc9ee2589, 0xe13f0cc8, 0xb6630ca6 };
 
+    u_int8_t key[16] = { 0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c };
+    u_int32_t w2[44];
+
+    keyExpansion(key, w2, keyLength);
 
 
     addRoundKey(state, w, 4);
@@ -404,6 +420,16 @@ void testCipherFunctions() {
              printf("%x, ", state[i][j]);
          }
          printf("\n");
+    }
+
+    uint8_t in[16]  = { 0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d,
+                        0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34 };
+    uint8_t out[16] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    cipher(in, out, w);
+    printf("after cipher:\n");
+    for (int i = 0; i < 16; ++i) {
+        printf("out[%d] = %x\n", i, out[i]);
     }
 
 
